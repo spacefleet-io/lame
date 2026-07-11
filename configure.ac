@@ -20,11 +20,12 @@ dnl FRONTEND_LDADD
 dnl extra vars for libmp3lame:
 dnl LIBMP3LAME_LDADD
 
-AC_PREREQ([2.71])
-AC_INIT([lame],[3.101],[lame-dev@lists.sf.net])
+AC_PREREQ([2.73])
+AC_INIT([lame],[4.0],[lame-dev@lists.sf.net])
 AC_CONFIG_SRCDIR([libmp3lame/lame.c])
 AC_CONFIG_MACRO_DIRS([m4])
 AC_LANG([C])
+AC_USE_SYSTEM_EXTENSIONS
 
 dnl check system
 AC_CANONICAL_HOST
@@ -40,6 +41,14 @@ AH_BOTTOM([#endif /* LAME_CONFIG_H */])
 AM_MAINTAINER_MODE
 AM_MAKE_INCLUDE
 PKG_PROG_PKG_CONFIG([])
+
+dnl for doc/Makefile's "doxygen" target - Graphviz is optional, so this must
+dnl not fail configure if it's absent
+AC_ARG_WITH([dot],
+  [AS_HELP_STRING([--with-dot=PATH], [path to Graphviz's dot tool, used by Doxygen for diagrams (default: autodetect on PATH)])],
+  [AS_IF([test "x$withval" = xno], [DOT=], [DOT="$withval"])],
+  [AC_PATH_PROG([DOT], [dot])])
+AC_SUBST([DOT])
 
 dnl check environment
 AC_SEARCH_LIBS([strerror],[cposix])
@@ -645,7 +654,7 @@ AC_ARG_ENABLE(ipv6, AS_HELP_STRING([--disable-ipv6],
     CONFIG_IPV6=yes)
 if test "x$CONFIG_IPV6" = "xyes" ; then
     AC_CACHE_VAL(ac_cv_ipv6,
-    AC_TRY_RUN([
+    AC_RUN_IFELSE([AC_LANG_SOURCE([[
     #include <sys/types.h>
     #include <sys/socket.h>
     #include <netinet/in.h>
@@ -656,10 +665,7 @@ if test "x$CONFIG_IPV6" = "xyes" ; then
         struct sockaddr_in6 foo;
         fd = socket(AF_INET6, SOCK_STREAM, 0);
         exit(fd >= 0 ? 0 : 1);
-    }],
-    ac_cv_ipv6=yes,
-    ac_cv_ipv6=no,
-    ac_cv_ipv6=yes))
+    }]])],[ac_cv_ipv6=yes],[ac_cv_ipv6=no],[ac_cv_ipv6=yes]))
     AC_MSG_RESULT($ac_cv_ipv6)
     if test $ac_cv_ipv6 = yes ; then
         AC_DEFINE(IPV6,1,[check if system supports IPV6])
